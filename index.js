@@ -27,7 +27,7 @@ var settings = {};
 settings.CONFIG_FILE   = argv.config || 'config.xml';
 settings.SPLASH_FILE   = argv.splash || 'splash.png';
 settings.IOS_DEST      = argv['ios-dest']? argv['ios-dest'].stripTrailingSlash() : false;
-settings.ANDROID_DEST  = argv['ios-dest']? argv['android-dest'].stripTrailingSlash() : false;
+settings.ANDROID_DEST  = argv['android-dest']? argv['android-dest'].stripTrailingSlash() : false;
 
 /**
  * Check which platforms are added to the project and return their splash screen names and sizes
