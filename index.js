@@ -1,10 +1,33 @@
-var fs     = require('fs');
-var xml2js = require('xml2js');
-var ig     = require('imagemagick');
-var colors = require('colors');
-var _      = require('underscore');
-var Q      = require('q');
-var argv   = require('yargs').argv;
+var fs     = require('fs'),
+    xml2js = require('xml2js'),
+    ig     = require('imagemagick'),
+    colors = require('colors'),
+    _      = require('underscore'),
+    Q      = require('q'),
+    argv   = require('yargs').argv,
+    mkdir = require('mkdir-p');
+
+String.prototype.stripTrailingSlash = function(str) {
+    if(this.substr(-1) === '/') {
+        return this.substr(0, this.length - 1);
+    }
+    return this;
+}
+
+if (!String.prototype.includes) {
+    String.prototype.includes = function() {'use strict';
+        return String.prototype.indexOf.apply(this, arguments) !== -1;
+    };
+}
+
+/**
+ * @var {Object} settings - names of the config file and of the splash image
+ */
+var settings = {};
+settings.CONFIG_FILE   = argv.config || 'config.xml';
+settings.SPLASH_FILE   = argv.splash || 'splash.png';
+settings.IOS_DEST      = argv['ios-dest']? argv['ios-dest'].stripTrailingSlash() : false;
+settings.ANDROID_DEST  = argv['ios-dest']? argv['android-dest'].stripTrailingSlash() : false;
 
 /**
  * Check which platforms are added to the project and return their splash screen names and sizes
@@ -19,7 +42,7 @@ var getPlatforms = function (projectName) {
         name : 'ios',
         // TODO: use async fs.exists
         isAdded : fs.existsSync('platforms/ios'),
-        splashPath : 'platforms/ios/' + projectName + '/Resources/splash/',
+        splashPath : settings.IOS_DEST ? settings.IOS_DEST + '/ios/' : 'platforms/ios/' + projectName + '/Resources/splash/',
         splash : [
             { name : 'Default-568h@2x~iphone.png',    width : 640,  height : 1136 },
             { name : 'Default-667h.png',              width : 750,  height : 1334 },
@@ -36,7 +59,7 @@ var getPlatforms = function (projectName) {
     platforms.push({
         name : 'android',
         isAdded : fs.existsSync('platforms/android'),
-        splashPath : 'platforms/android/res/',
+        splashPath : settings.ANDROID_DEST ? settings.ANDROID_DEST + '/android/' : 'platforms/android/res/',
         splash : [
             { name : 'drawable-land-ldpi/screen.png',  width : 320, height: 200 },
             { name : 'drawable-land-mdpi/screen.png',  width : 480, height: 320 },
@@ -52,14 +75,6 @@ var getPlatforms = function (projectName) {
     deferred.resolve(platforms);
     return deferred.promise;
 };
-
-
-/**
- * @var {Object} settings - names of the config file and of the splash image
- */
-var settings = {};
-settings.CONFIG_FILE = argv.config || 'config.xml';
-settings.SPLASH_FILE   = argv.splash || 'splash.png';
 
 /**
  * @var {Object} console utils
@@ -111,6 +126,11 @@ var getProjectName = function () {
  */
 var generateSplash = function (platform, splash) {
     var deferred = Q.defer();
+    if( !platform.splashPath.includes('ios') ){
+        mkdir.sync(platform.splashPath + splash.name.split('/screen.png')[0]);
+    }else {
+        mkdir.sync(platform.splashPath);
+    }
     ig.crop({
         srcPath: settings.SPLASH_FILE,
         dstPath: platform.splashPath + splash.name,
